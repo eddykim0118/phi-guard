@@ -39,10 +39,9 @@ SUPPORTED_EXTENSIONS = {
 # 새 recognizer 만들 때마다 여기에 추가해야 함
 PHI_ENTITY_TYPES = {
     "US_SSN",           # 사회보장번호
-    # TODO: 새 recognizer 추가할 때마다 여기에 추가
-    # "MRN",            # 의무기록번호
-    # "US_PHONE",       # 전화번호
-    # "EMAIL_ADDRESS",  # 이메일 (나중에 커스텀으로 교체 가능)
+    "PHONE_NUMBER",     # 전화번호 (Presidio 기본)
+    "EMAIL_ADDRESS",    # 이메일 (Presidio 기본)
+    "MRN",              # 의무기록번호 (커스텀)
 }
 
 

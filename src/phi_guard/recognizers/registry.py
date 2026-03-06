@@ -21,6 +21,7 @@ from presidio_analyzer import AnalyzerEngine
 from presidio_analyzer.nlp_engine import NlpEngineProvider
 
 from phi_guard.recognizers.ssn import build_ssn_recognizer
+from phi_guard.recognizers.mrn import build_mrn_recognizer
 
 
 # 싱글톤 패턴: 엔진은 한 번만 생성하고 재사용
@@ -62,13 +63,10 @@ def get_analyzer_engine() -> AnalyzerEngine:
     )
 
     # 커스텀 recognizer 등록
-    # Presidio 기본 recognizer들은 자동으로 로드됨
+    # Presidio 기본 recognizer들은 자동으로 로드됨 (PHONE_NUMBER, EMAIL_ADDRESS 등)
     # 우리 것은 수동으로 추가해야 함
     _analyzer_engine.registry.add_recognizer(build_ssn_recognizer())
-
-    # TODO: 새 recognizer 만들 때마다 여기에 추가
-    # _analyzer_engine.registry.add_recognizer(build_mrn_recognizer())
-    # _analyzer_engine.registry.add_recognizer(build_phone_recognizer())
+    _analyzer_engine.registry.add_recognizer(build_mrn_recognizer())
 
     return _analyzer_engine
 
