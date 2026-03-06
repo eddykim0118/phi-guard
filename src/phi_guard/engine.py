@@ -42,6 +42,8 @@ PHI_ENTITY_TYPES = {
     "PHONE_NUMBER",     # 전화번호 (Presidio 기본)
     "EMAIL_ADDRESS",    # 이메일 (Presidio 기본)
     "MRN",              # 의무기록번호 (커스텀)
+    "DATE_TIME",        # 날짜/시간 (Presidio 기본) - HIPAA PHI #3
+    "IP_ADDRESS",       # IP 주소 (Presidio 기본) - HIPAA PHI #15
 }
 
 
