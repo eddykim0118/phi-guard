@@ -209,3 +209,6 @@ __marimo__/
 # Project internal docs (not for public repo)
 CLAUDE.md
 PROJECT_GUIDE.md
+
+# Test files
+test_phi.txt
