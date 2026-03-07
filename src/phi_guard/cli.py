@@ -72,9 +72,9 @@ def output_json(findings: list[Finding]) -> None:
 
 @app.command()
 def scan(
-    path: Path = typer.Argument(
+    paths: list[Path] = typer.Argument(
         ...,
-        help="File or directory to scan",
+        help="Files or directories to scan",
         exists=True,
     ),
     threshold: float = typer.Option(
@@ -107,22 +107,28 @@ def scan(
     """
     # Skip header output for JSON format
     if output_format != OutputFormat.JSON:
-        console.print(f"[bold]Scanning:[/bold] {path}")
+        paths_display = ", ".join(str(p) for p in paths[:3])
+        if len(paths) > 3:
+            paths_display += f" (+{len(paths) - 3} more)"
+        console.print(f"[bold]Scanning:[/bold] {paths_display}")
         console.print(f"[dim]Threshold: {threshold}, Recursive: {recursive}[/dim]")
         if exclude:
             console.print(f"[dim]Excluding: {', '.join(exclude)}[/dim]")
         console.print()
 
     try:
-        if path.is_file():
-            findings = scan_file(path, score_threshold=threshold)
-        else:
-            findings = scan_directory(
-                path,
-                score_threshold=threshold,
-                recursive=recursive,
-                exclude_patterns=exclude,
-            )
+        all_findings: list[Finding] = []
+        for path in paths:
+            if path.is_file():
+                findings = scan_file(path, score_threshold=threshold)
+            else:
+                findings = scan_directory(
+                    path,
+                    score_threshold=threshold,
+                    recursive=recursive,
+                    exclude_patterns=exclude,
+                )
+            all_findings.extend(findings)
     except Exception as e:
         if output_format == OutputFormat.JSON:
             print(json.dumps({"error": str(e)}, indent=2))
@@ -131,12 +137,12 @@ def scan(
         raise typer.Exit(code=2)
 
     if output_format == OutputFormat.JSON:
-        output_json(findings)
+        output_json(all_findings)
     else:
-        display_findings(findings)
+        display_findings(all_findings)
 
     # Exit with code 1 if PHI found (for CI/CD failure detection)
-    if findings:
+    if all_findings:
         raise typer.Exit(code=1)
 
 

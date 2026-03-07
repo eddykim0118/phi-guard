@@ -1,0 +1,7 @@
+- id: phi-guard
+  name: PHI Guard
+  description: Scan for Protected Health Information (HIPAA PHI)
+  entry: phi-guard scan
+  language: python
+  types: [text]
+  pass_filenames: true
