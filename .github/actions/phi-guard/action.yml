@@ -1,0 +1,53 @@
+name: 'PHI Guard'
+description: 'Scan for Protected Health Information (HIPAA PHI)'
+author: 'eddykim'
+
+branding:
+  icon: 'shield'
+  color: 'red'
+
+inputs:
+  path:
+    description: 'Path to scan (file or directory)'
+    required: false
+    default: '.'
+  threshold:
+    description: 'Minimum confidence score (0.0-1.0)'
+    required: false
+    default: '0.5'
+  exclude:
+    description: 'Patterns to exclude (comma-separated)'
+    required: false
+    default: ''
+  format:
+    description: 'Output format (table or json)'
+    required: false
+    default: 'table'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: Install PHI Guard
+      shell: bash
+      run: pip install phi-guard
+
+    - name: Run PHI Guard
+      shell: bash
+      run: |
+        EXCLUDE_ARGS=""
+        if [ -n "${{ inputs.exclude }}" ]; then
+          IFS=',' read -ra PATTERNS <<< "${{ inputs.exclude }}"
+          for pattern in "${PATTERNS[@]}"; do
+            EXCLUDE_ARGS="$EXCLUDE_ARGS --exclude $pattern"
+          done
+        fi
+
+        phi-guard scan ${{ inputs.path }} \
+          --threshold ${{ inputs.threshold }} \
+          --format ${{ inputs.format }} \
+          $EXCLUDE_ARGS
