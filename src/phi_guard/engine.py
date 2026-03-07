@@ -3,7 +3,12 @@
 from dataclasses import dataclass
 from pathlib import Path
 
-from phi_guard.ignore import load_ignore_patterns, should_ignore
+from phi_guard.ignore import (
+    build_ignore_spec,
+    load_ignore_patterns,
+    merge_ignore_specs,
+    should_ignore,
+)
 from phi_guard.recognizers.registry import get_analyzer_engine
 
 
@@ -75,11 +80,17 @@ def scan_directory(
     directory: Path,
     score_threshold: float = 0.5,
     recursive: bool = True,
+    exclude_patterns: list[str] | None = None,
 ) -> list[Finding]:
     """Scan all files in a directory for PHI."""
     directory = Path(directory)
     all_findings: list[Finding] = []
-    ignore_spec = load_ignore_patterns(directory)
+
+    # Combine .phiguardignore patterns with CLI exclude patterns
+    file_spec = load_ignore_patterns(directory)
+    cli_spec = build_ignore_spec(exclude_patterns or [])
+    ignore_spec = merge_ignore_specs([file_spec, cli_spec])
+
     pattern = "**/*" if recursive else "*"
 
     for file_path in directory.glob(pattern):

@@ -1,15 +1,7 @@
-"""
-PHI Guard CLI
-
-Typer를 사용한 커맨드라인 인터페이스입니다.
-
-사용법:
-    phi-guard scan ./                    # 현재 디렉토리 스캔
-    phi-guard scan ./test.py             # 특정 파일 스캔
-    phi-guard scan ./ --threshold 0.7    # 신뢰도 임계값 조정
-"""
+"""PHI Guard CLI - Command-line interface using Typer."""
 
 from pathlib import Path
+from typing import Optional
 
 import typer
 from rich.console import Console
@@ -17,27 +9,21 @@ from rich.table import Table
 
 from phi_guard.engine import Finding, scan_directory, scan_file
 
-# Typer 앱 생성
-# add_completion=False: 자동완성 명령어 숨김 (깔끔하게)
 app = typer.Typer(
     name="phi-guard",
     help="HIPAA PHI scanner for CI/CD pipelines",
     add_completion=False,
 )
 
-# Rich 콘솔 (예쁜 출력용)
 console = Console()
 
 
 def display_findings(findings: list[Finding]) -> None:
-    """
-    Finding 리스트를 예쁜 테이블로 출력합니다.
-    """
+    """Display findings as a formatted table."""
     if not findings:
         console.print("[green]No PHI found.[/green]")
         return
 
-    # 테이블 생성
     table = Table(
         title=f"[bold red]PHI Found: {len(findings)} item(s)[/bold red]",
         show_header=True,
@@ -51,7 +37,6 @@ def display_findings(findings: list[Finding]) -> None:
     table.add_column("Score", justify="right")
 
     for finding in findings:
-        # 파일 경로가 너무 길면 줄임
         file_display = finding.file_path or "(text)"
         if len(file_display) > 40:
             file_display = "..." + file_display[-37:]
@@ -86,6 +71,11 @@ def scan(
         "--recursive/--no-recursive", "-r/-R",
         help="Scan subdirectories recursively",
     ),
+    exclude: Optional[list[str]] = typer.Option(
+        None,
+        "--exclude", "-e",
+        help="Patterns to exclude (gitignore style). Can be used multiple times.",
+    ),
 ) -> None:
     """
     Scan files for Protected Health Information (PHI).
@@ -94,6 +84,8 @@ def scan(
     """
     console.print(f"[bold]Scanning:[/bold] {path}")
     console.print(f"[dim]Threshold: {threshold}, Recursive: {recursive}[/dim]")
+    if exclude:
+        console.print(f"[dim]Excluding: {', '.join(exclude)}[/dim]")
     console.print()
 
     try:
@@ -104,11 +96,12 @@ def scan(
                 path,
                 score_threshold=threshold,
                 recursive=recursive,
+                exclude_patterns=exclude,
             )
 
         display_findings(findings)
 
-        # PHI가 발견되면 exit code 1 (CI/CD에서 실패 처리용)
+        # Exit with code 1 if PHI found (for CI/CD failure detection)
         if findings:
             raise typer.Exit(code=1)
 
@@ -119,16 +112,12 @@ def scan(
 
 @app.command()
 def version() -> None:
-    """
-    Show PHI Guard version.
-    """
+    """Show PHI Guard version."""
     console.print("[bold]PHI Guard[/bold] v0.1.0")
 
 
 def main() -> None:
-    """
-    CLI 진입점. pyproject.toml의 scripts에서 호출됨.
-    """
+    """CLI entry point. Called from pyproject.toml scripts."""
     app()
 
 

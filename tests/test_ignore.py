@@ -3,7 +3,12 @@
 import pytest
 from pathlib import Path
 
-from phi_guard.ignore import load_ignore_patterns, should_ignore
+from phi_guard.ignore import (
+    build_ignore_spec,
+    load_ignore_patterns,
+    merge_ignore_specs,
+    should_ignore,
+)
 from phi_guard.engine import scan_directory
 
 
@@ -148,3 +153,130 @@ class TestScanDirectoryWithIgnore:
         assert len([p for p in file_paths if "main.py" in p]) >= 1
         assert not any("debug.log" in p for p in file_paths)
         assert not any("test_main.py" in p for p in file_paths)
+
+
+class TestBuildIgnoreSpec:
+    """Tests for build_ignore_spec()."""
+
+    def test_returns_none_for_empty_list(self):
+        spec = build_ignore_spec([])
+        assert spec is None
+
+    def test_returns_spec_for_patterns(self):
+        spec = build_ignore_spec(["*.log", "tests/"])
+        assert spec is not None
+
+    def test_matches_patterns(self, tmp_path: Path):
+        spec = build_ignore_spec(["*.log", "tests/"])
+
+        assert spec.match_file("debug.log") is True
+        assert spec.match_file("tests/test_main.py") is True
+        assert spec.match_file("main.py") is False
+
+
+class TestMergeIgnoreSpecs:
+    """Tests for merge_ignore_specs()."""
+
+    def test_returns_none_for_all_none(self):
+        spec = merge_ignore_specs([None, None, None])
+        assert spec is None
+
+    def test_returns_none_for_empty_list(self):
+        spec = merge_ignore_specs([])
+        assert spec is None
+
+    def test_merges_single_spec(self):
+        spec1 = build_ignore_spec(["*.log"])
+        merged = merge_ignore_specs([spec1])
+
+        assert merged is not None
+        assert merged.match_file("debug.log") is True
+
+    def test_merges_multiple_specs(self):
+        spec1 = build_ignore_spec(["*.log"])
+        spec2 = build_ignore_spec(["tests/"])
+        merged = merge_ignore_specs([spec1, spec2])
+
+        assert merged is not None
+        assert merged.match_file("debug.log") is True
+        assert merged.match_file("tests/test_main.py") is True
+        assert merged.match_file("main.py") is False
+
+    def test_ignores_none_specs(self):
+        spec1 = build_ignore_spec(["*.log"])
+        merged = merge_ignore_specs([None, spec1, None])
+
+        assert merged is not None
+        assert merged.match_file("debug.log") is True
+
+
+class TestScanDirectoryWithExcludePatterns:
+    """Tests for scan_directory() with exclude_patterns parameter."""
+
+    def test_excludes_files_by_pattern(self, tmp_path: Path):
+        ignored_file = tmp_path / "test_data.py"
+        ignored_file.write_text("SSN: 123-45-6789")
+
+        scanned_file = tmp_path / "main.py"
+        scanned_file.write_text("SSN: 234-56-7890")
+
+        findings = scan_directory(tmp_path, exclude_patterns=["test_*.py"])
+
+        file_paths = [f.file_path for f in findings]
+        assert not any("test_data.py" in str(p) for p in file_paths)
+        assert any("main.py" in str(p) for p in file_paths)
+
+    def test_excludes_directory_pattern(self, tmp_path: Path):
+        tests_dir = tmp_path / "tests"
+        tests_dir.mkdir()
+        test_file = tests_dir / "test_main.py"
+        test_file.write_text("SSN: 123-45-6789")
+
+        main_file = tmp_path / "main.py"
+        main_file.write_text("SSN: 234-56-7890")
+
+        findings = scan_directory(tmp_path, exclude_patterns=["tests/"])
+
+        file_paths = [str(f.file_path) for f in findings]
+        assert not any("tests" in p for p in file_paths)
+        assert any("main.py" in p for p in file_paths)
+
+    def test_multiple_exclude_patterns(self, tmp_path: Path):
+        log_file = tmp_path / "debug.log"
+        log_file.write_text("SSN: 111-22-3333")
+
+        test_file = tmp_path / "test_main.py"
+        test_file.write_text("SSN: 444-55-6666")
+
+        main_file = tmp_path / "main.py"
+        main_file.write_text("SSN: 777-88-9999")
+
+        findings = scan_directory(tmp_path, exclude_patterns=["*.log", "test_*.py"])
+
+        file_paths = [str(f.file_path) for f in findings]
+        assert any("main.py" in p for p in file_paths)
+        assert not any("debug.log" in p for p in file_paths)
+        assert not any("test_main.py" in p for p in file_paths)
+
+    def test_combines_with_phiguardignore(self, tmp_path: Path):
+        # .phiguardignore excludes *.log
+        ignore_file = tmp_path / ".phiguardignore"
+        ignore_file.write_text("*.log\n")
+
+        log_file = tmp_path / "debug.log"
+        log_file.write_text("SSN: 111-22-3333")
+
+        test_file = tmp_path / "test_main.py"
+        test_file.write_text("SSN: 444-55-6666")
+
+        main_file = tmp_path / "main.py"
+        main_file.write_text("SSN: 777-88-9999")
+
+        # CLI excludes test_*.py
+        findings = scan_directory(tmp_path, exclude_patterns=["test_*.py"])
+
+        file_paths = [str(f.file_path) for f in findings]
+        # Only main.py should be scanned
+        assert any("main.py" in p for p in file_paths)
+        assert not any("debug.log" in p for p in file_paths)  # from .phiguardignore
+        assert not any("test_main.py" in p for p in file_paths)  # from CLI
