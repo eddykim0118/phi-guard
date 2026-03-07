@@ -1,5 +1,8 @@
 """PHI Guard CLI - Command-line interface using Typer."""
 
+import json
+from dataclasses import asdict
+from enum import Enum
 from pathlib import Path
 from typing import Optional
 
@@ -8,6 +11,12 @@ from rich.console import Console
 from rich.table import Table
 
 from phi_guard.engine import Finding, scan_directory, scan_file
+
+
+class OutputFormat(str, Enum):
+    TABLE = "table"
+    JSON = "json"
+
 
 app = typer.Typer(
     name="phi-guard",
@@ -52,6 +61,15 @@ def display_findings(findings: list[Finding]) -> None:
     console.print(table)
 
 
+def output_json(findings: list[Finding]) -> None:
+    """Output findings as JSON for CI/CD parsing."""
+    data = {
+        "findings": [asdict(f) for f in findings],
+        "count": len(findings),
+    }
+    print(json.dumps(data, indent=2))
+
+
 @app.command()
 def scan(
     path: Path = typer.Argument(
@@ -76,17 +94,24 @@ def scan(
         "--exclude", "-e",
         help="Patterns to exclude (gitignore style). Can be used multiple times.",
     ),
+    output_format: OutputFormat = typer.Option(
+        OutputFormat.TABLE,
+        "--format", "-f",
+        help="Output format: table (default) or json",
+    ),
 ) -> None:
     """
     Scan files for Protected Health Information (PHI).
 
     Detects SSN, MRN, phone numbers, and other HIPAA-defined identifiers.
     """
-    console.print(f"[bold]Scanning:[/bold] {path}")
-    console.print(f"[dim]Threshold: {threshold}, Recursive: {recursive}[/dim]")
-    if exclude:
-        console.print(f"[dim]Excluding: {', '.join(exclude)}[/dim]")
-    console.print()
+    # Skip header output for JSON format
+    if output_format != OutputFormat.JSON:
+        console.print(f"[bold]Scanning:[/bold] {path}")
+        console.print(f"[dim]Threshold: {threshold}, Recursive: {recursive}[/dim]")
+        if exclude:
+            console.print(f"[dim]Excluding: {', '.join(exclude)}[/dim]")
+        console.print()
 
     try:
         if path.is_file():
@@ -98,16 +123,21 @@ def scan(
                 recursive=recursive,
                 exclude_patterns=exclude,
             )
+    except Exception as e:
+        if output_format == OutputFormat.JSON:
+            print(json.dumps({"error": str(e)}, indent=2))
+        else:
+            console.print(f"[red]Error:[/red] {e}")
+        raise typer.Exit(code=2)
 
+    if output_format == OutputFormat.JSON:
+        output_json(findings)
+    else:
         display_findings(findings)
 
-        # Exit with code 1 if PHI found (for CI/CD failure detection)
-        if findings:
-            raise typer.Exit(code=1)
-
-    except Exception as e:
-        console.print(f"[red]Error:[/red] {e}")
-        raise typer.Exit(code=2)
+    # Exit with code 1 if PHI found (for CI/CD failure detection)
+    if findings:
+        raise typer.Exit(code=1)
 
 
 @app.command()
