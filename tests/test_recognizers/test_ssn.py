@@ -29,9 +29,10 @@ class TestSSNTruePositives:
         """유효한 SSN 형식이 탐지되는지 확인"""
         findings = scan_text(text)
 
-        assert len(findings) >= 1, f"SSN not detected in: {text}"
-        assert findings[0].entity_type == "US_SSN"
-        assert findings[0].text == expected_ssn
+        # Filter for US_SSN specifically (other types like DATE_TIME might also match)
+        ssn_findings = [f for f in findings if f.entity_type == "US_SSN"]
+        assert len(ssn_findings) >= 1, f"SSN not detected in: {text}"
+        assert ssn_findings[0].text == expected_ssn
 
     def test_ssn_score_above_threshold(self):
         """SSN 탐지 점수가 threshold 이상인지 확인"""

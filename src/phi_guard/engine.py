@@ -19,6 +19,7 @@ PHI Guard Scan Engine
 from dataclasses import dataclass
 from pathlib import Path
 
+from phi_guard.ignore import load_ignore_patterns, should_ignore
 from phi_guard.recognizers.registry import get_analyzer_engine
 
 
@@ -171,6 +172,9 @@ def scan_directory(
     directory = Path(directory)
     all_findings: list[Finding] = []
 
+    # .phiguardignore 패턴 로드
+    ignore_spec = load_ignore_patterns(directory)
+
     # 파일 패턴 설정
     pattern = "**/*" if recursive else "*"
 
@@ -185,6 +189,10 @@ def scan_directory(
 
         # 숨김 파일/디렉토리 스킵 (.git, .venv 등)
         if any(part.startswith(".") for part in file_path.parts):
+            continue
+
+        # .phiguardignore 패턴 체크
+        if should_ignore(file_path, directory, ignore_spec):
             continue
 
         try:
