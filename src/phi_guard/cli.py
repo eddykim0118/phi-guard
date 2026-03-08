@@ -11,11 +11,13 @@ from rich.console import Console
 from rich.table import Table
 
 from phi_guard.engine import Finding, scan_directory, scan_file
+from phi_guard.reporters.sarif import output_sarif
 
 
 class OutputFormat(str, Enum):
     TABLE = "table"
     JSON = "json"
+    SARIF = "sarif"
 
 
 app = typer.Typer(
@@ -97,7 +99,7 @@ def scan(
     output_format: OutputFormat = typer.Option(
         OutputFormat.TABLE,
         "--format", "-f",
-        help="Output format: table (default) or json",
+        help="Output format: table (default), json, or sarif",
     ),
 ) -> None:
     """
@@ -105,8 +107,8 @@ def scan(
 
     Detects SSN, MRN, phone numbers, and other HIPAA-defined identifiers.
     """
-    # Skip header output for JSON format
-    if output_format != OutputFormat.JSON:
+    # Skip header output for JSON/SARIF formats
+    if output_format == OutputFormat.TABLE:
         paths_display = ", ".join(str(p) for p in paths[:3])
         if len(paths) > 3:
             paths_display += f" (+{len(paths) - 3} more)"
@@ -136,7 +138,9 @@ def scan(
             console.print(f"[red]Error:[/red] {e}")
         raise typer.Exit(code=2)
 
-    if output_format == OutputFormat.JSON:
+    if output_format == OutputFormat.SARIF:
+        output_sarif(all_findings)
+    elif output_format == OutputFormat.JSON:
         output_json(all_findings)
     else:
         display_findings(all_findings)
