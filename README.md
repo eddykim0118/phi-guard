@@ -6,7 +6,7 @@
 
 ![PyPI](https://img.shields.io/pypi/v/phi-guard)
 ![Python](https://img.shields.io/pypi/pyversions/phi-guard)
-![License](https://img.shields.io/github/license/eddykim/phi-guard)
+![License](https://img.shields.io/github/license/eddykim0118/phi-guard)
 
 ## The Problem
 
@@ -62,7 +62,7 @@ Block PHI before it reaches the repository. Regex-only scanning completes in und
 ```yaml
 # .pre-commit-config.yaml
 repos:
-  - repo: https://github.com/eddykim/phi-guard
+  - repo: https://github.com/eddykim0118/phi-guard
     rev: v0.1.0
     hooks:
       - id: phi-guard
@@ -73,7 +73,7 @@ Scan every pull request with NLP-powered detection. Catches names, locations, an
 
 ```yaml
 # .github/workflows/phi-guard.yml
-- uses: eddykim/phi-guard-action@v1
+- uses: eddykim0118/phi-guard-action@v1
   with:
     mode: full
 ```
@@ -155,7 +155,7 @@ You could! But PHI Guard provides:
 
 ```bash
 # Clone and setup
-git clone https://github.com/eddykim/phi-guard.git
+git clone https://github.com/eddykim0118/phi-guard.git
 cd phi-guard
 poetry install
 
