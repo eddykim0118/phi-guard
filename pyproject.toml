@@ -1,6 +1,6 @@
 [project]
 name = "phi-guard"
-version = "0.1.0"
+version = "0.2.0"
 description = "HIPAA PHI scanner for CI/CD pipelines"
 authors = [
     {name = "Eddy Kim", email = "eddykim0118@gmail.com"}

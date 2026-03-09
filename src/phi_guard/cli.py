@@ -160,7 +160,7 @@ def scan(
 @app.command()
 def version() -> None:
     """Show PHI Guard version."""
-    console.print("[bold]PHI Guard[/bold] v0.1.0")
+    console.print("[bold]PHI Guard[/bold] v0.2.0")
 
 
 def main() -> None:
