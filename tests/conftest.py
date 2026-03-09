@@ -3,6 +3,14 @@
 import pytest
 from pathlib import Path
 
+from phi_guard.recognizers.registry import reset_analyzer_engine
+
+
+@pytest.fixture(scope="session", autouse=True)
+def reset_engine():
+    """Reset the analyzer engine before running tests."""
+    reset_analyzer_engine()
+
 
 @pytest.fixture
 def sample_ssn() -> str:

@@ -21,14 +21,28 @@ SUPPORTED_EXTENSIONS = {
     ".xml", ".html",
 }
 
-# PHI entity types to detect (excludes generic spaCy NER entities)
+# PHI entity types to detect (based on HIPAA's 18 identifiers)
+# Excludes generic spaCy NER entities like PERSON to reduce false positives
 PHI_ENTITY_TYPES = {
-    "US_SSN",
-    "PHONE_NUMBER",
-    "EMAIL_ADDRESS",
-    "MRN",
-    "DATE_TIME",
-    "IP_ADDRESS",
+    # Presidio built-in
+    "US_SSN",           # PHI #7: Social Security numbers
+    "PHONE_NUMBER",     # PHI #4: Telephone numbers
+    "EMAIL_ADDRESS",    # PHI #6: Email addresses
+    "DATE_TIME",        # PHI #2: Dates (except year)
+    "IP_ADDRESS",       # PHI #16: Internet Protocol addresses
+    "URL",              # PHI #6: Web URLs
+    # Custom recognizers
+    "MRN",              # PHI #8: Medical record numbers
+    "VIN",              # PHI #14: Vehicle identifiers
+    "DRIVERS_LICENSE",  # PHI #13: Certificate/license numbers
+    "DEA_NUMBER",       # PHI #13: DEA registration numbers
+    "NPI",              # PHI #13: National Provider Identifier
+    "HEALTH_PLAN_ID",   # PHI #11: Health plan beneficiary numbers
+    "AGE_OVER_89",      # PHI #17: Ages over 89
+    "ZIP_CODE",         # PHI #3: Geographic (smaller than state)
+    "ACCOUNT_NUMBER",   # PHI #12: Account numbers
+    "DEVICE_ID",        # PHI #15: Device identifiers
+    "FAX_NUMBER",       # PHI #5: Fax numbers
 }
 
 
