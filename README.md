@@ -63,7 +63,7 @@ Block PHI before it reaches the repository. Regex-only scanning completes in und
 # .pre-commit-config.yaml
 repos:
   - repo: https://github.com/eddykim0118/phi-guard
-    rev: v0.1.0
+    rev: v0.2.0
     hooks:
       - id: phi-guard
 ```
