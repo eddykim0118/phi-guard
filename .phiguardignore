@@ -1,0 +1,19 @@
+# PHI Guard's own ignore file
+# These files contain intentional PHI examples for testing/documentation
+
+# Test files contain intentional PHI fixtures
+tests/
+
+# Documentation contains example PHI
+*.md
+
+# Config files (author email, URLs are not PHI)
+pyproject.toml
+poetry.lock
+
+# Build artifacts
+dist/
+*.egg-info/
+
+# Test PHI file used for manual testing
+test_phi.txt
