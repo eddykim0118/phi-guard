@@ -9,7 +9,7 @@ from phi_guard.ignore import (
     merge_ignore_specs,
     should_ignore,
 )
-from phi_guard.recognizers.registry import get_analyzer_engine
+from phi_guard.recognizers.registry import get_analyzer_engine, ScanMode
 
 
 SUPPORTED_EXTENSIONS = {
@@ -58,9 +58,22 @@ class Finding:
     line_number: int | None = None
 
 
-def scan_text(text: str, score_threshold: float = 0.5) -> list[Finding]:
-    """Scan text for PHI and return findings above the score threshold."""
-    analyzer = get_analyzer_engine()
+def scan_text(
+    text: str,
+    score_threshold: float = 0.5,
+    mode: ScanMode = ScanMode.FULL,
+) -> list[Finding]:
+    """Scan text for PHI and return findings above the score threshold.
+
+    Args:
+        text: The text to scan for PHI.
+        score_threshold: Minimum confidence score (0.0-1.0) for findings.
+        mode: ScanMode.FAST for regex-only, ScanMode.FULL for regex + NLP.
+
+    Returns:
+        List of Finding objects for detected PHI.
+    """
+    analyzer = get_analyzer_engine(mode=mode)
     results = analyzer.analyze(text=text, language="en", score_threshold=score_threshold)
 
     findings = []
@@ -77,11 +90,15 @@ def scan_text(text: str, score_threshold: float = 0.5) -> list[Finding]:
     return findings
 
 
-def scan_file(file_path: Path, score_threshold: float = 0.5) -> list[Finding]:
+def scan_file(
+    file_path: Path,
+    score_threshold: float = 0.5,
+    mode: ScanMode = ScanMode.FULL,
+) -> list[Finding]:
     """Scan a file for PHI. Returns findings with file_path and line_number."""
     file_path = Path(file_path)
     content = file_path.read_text(encoding="utf-8")
-    findings = scan_text(content, score_threshold=score_threshold)
+    findings = scan_text(content, score_threshold=score_threshold, mode=mode)
 
     for finding in findings:
         finding.file_path = str(file_path)
@@ -95,6 +112,7 @@ def scan_directory(
     score_threshold: float = 0.5,
     recursive: bool = True,
     exclude_patterns: list[str] | None = None,
+    mode: ScanMode = ScanMode.FULL,
 ) -> list[Finding]:
     """Scan all files in a directory for PHI."""
     directory = Path(directory)
@@ -118,7 +136,7 @@ def scan_directory(
             continue
 
         try:
-            findings = scan_file(file_path, score_threshold=score_threshold)
+            findings = scan_file(file_path, score_threshold=score_threshold, mode=mode)
             all_findings.extend(findings)
         except UnicodeDecodeError:
             continue

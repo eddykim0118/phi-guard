@@ -11,6 +11,7 @@ from rich.console import Console
 from rich.table import Table
 
 from phi_guard.engine import Finding, scan_directory, scan_file
+from phi_guard.recognizers.registry import ScanMode
 from phi_guard.reporters.sarif import output_sarif
 
 
@@ -101,6 +102,11 @@ def scan(
         "--format", "-f",
         help="Output format: table (default), json, or sarif",
     ),
+    mode: ScanMode = typer.Option(
+        ScanMode.FULL,
+        "--mode", "-m",
+        help="Scanning mode: 'fast' (regex-only, <3s) or 'full' (regex + NLP)",
+    ),
 ) -> None:
     """
     Scan files for Protected Health Information (PHI).
@@ -113,7 +119,7 @@ def scan(
         if len(paths) > 3:
             paths_display += f" (+{len(paths) - 3} more)"
         console.print(f"[bold]Scanning:[/bold] {paths_display}")
-        console.print(f"[dim]Threshold: {threshold}, Recursive: {recursive}[/dim]")
+        console.print(f"[dim]Threshold: {threshold}, Recursive: {recursive}, Mode: {mode.value}[/dim]")
         if exclude:
             console.print(f"[dim]Excluding: {', '.join(exclude)}[/dim]")
         console.print()
@@ -122,13 +128,14 @@ def scan(
         all_findings: list[Finding] = []
         for path in paths:
             if path.is_file():
-                findings = scan_file(path, score_threshold=threshold)
+                findings = scan_file(path, score_threshold=threshold, mode=mode)
             else:
                 findings = scan_directory(
                     path,
                     score_threshold=threshold,
                     recursive=recursive,
                     exclude_patterns=exclude,
+                    mode=mode,
                 )
             all_findings.extend(findings)
     except Exception as e:
