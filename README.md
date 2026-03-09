@@ -4,11 +4,9 @@
 
 > HIPAA PHI scanner for CI/CD pipelines — like gitleaks, but for healthcare data.
 
-<!-- Badges (activate when published) -->
-<!-- ![PyPI](https://img.shields.io/pypi/v/phi-guard) -->
-<!-- ![Python](https://img.shields.io/pypi/pyversions/phi-guard) -->
-<!-- ![License](https://img.shields.io/github/license/eddykim/phi-guard) -->
-<!-- ![CI](https://img.shields.io/github/actions/workflow/status/eddykim/phi-guard/ci.yml) -->
+![PyPI](https://img.shields.io/pypi/v/phi-guard)
+![Python](https://img.shields.io/pypi/pyversions/phi-guard)
+![License](https://img.shields.io/github/license/eddykim/phi-guard)
 
 ## The Problem
 
@@ -31,28 +29,30 @@ GitHub's Secret Scanning catches API keys and passwords — but it has **zero su
 
 ## What PHI Guard Does
 
-PHI Guard scans your codebase for all 18 types of Protected Health Information defined by HIPAA:
+PHI Guard scans your codebase for **17 of 18** types of Protected Health Information defined by HIPAA:
 
 | # | PHI Type | Status |
 |---|----------|--------|
-| 1 | Names | Planned |
-| 2 | Geographic data | Planned |
-| 3 | Dates (birth, admission, etc.) | Planned |
-| 4 | Phone numbers | Planned |
-| 5 | Fax numbers | Planned |
-| 6 | Email addresses | Planned |
-| 7 | **Social Security Numbers** | **Supported** |
-| 8 | Medical Record Numbers | Planned |
-| 9 | Health plan beneficiary numbers | Planned |
-| 10 | Account numbers | Planned |
-| 11 | Certificate/license numbers | Planned |
-| 12 | Vehicle identifiers | Planned |
-| 13 | Device identifiers | Planned |
-| 14 | URLs | Planned |
-| 15 | IP addresses | Planned |
-| 16 | Biometric identifiers | Planned |
-| 17 | Full-face photographs | Out of scope |
-| 18 | Other unique identifiers | Planned |
+| 1 | Names | Excluded* |
+| 2 | Geographic data (ZIP codes) | **Supported** |
+| 3 | Dates (birth, admission, etc.) | **Supported** |
+| 4 | Phone numbers | **Supported** |
+| 5 | Fax numbers | **Supported** |
+| 6 | Email addresses | **Supported** |
+| 7 | Social Security Numbers | **Supported** |
+| 8 | Medical Record Numbers | **Supported** |
+| 9 | Health plan beneficiary numbers | **Supported** |
+| 10 | Account numbers | **Supported** |
+| 11 | Certificate/license numbers | **Supported** |
+| 12 | Vehicle identifiers (VIN) | **Supported** |
+| 13 | Device identifiers | **Supported** |
+| 14 | URLs | **Supported** |
+| 15 | IP addresses | **Supported** |
+| 16 | Biometric identifiers | N/A |
+| 17 | Full-face photographs | N/A |
+| 18 | Ages over 89 | **Supported** |
+
+*Names excluded to avoid false positives. See [PROJECT_GUIDE.md](PROJECT_GUIDE.md) for details.
 
 ## Use Cases
 
@@ -80,15 +80,14 @@ Scan every pull request with NLP-powered detection. Catches names, locations, an
 
 ## Installation
 
-> Coming soon — not yet published to PyPI
-
 ```bash
 pip install phi-guard
+
+# Download the spaCy language model (required)
+python -m spacy download en_core_web_sm
 ```
 
 ## Usage
-
-> Coming soon — CLI in development
 
 ```bash
 # Scan current directory
@@ -96,6 +95,15 @@ phi-guard scan ./
 
 # Scan specific file
 phi-guard scan ./tests/fixtures/sample.py
+
+# Custom confidence threshold (0.0-1.0)
+phi-guard scan ./ --threshold 0.7
+
+# Exclude patterns (gitignore style)
+phi-guard scan ./ --exclude "tests/*" --exclude "*.md"
+
+# Output as JSON (for CI/CD parsing)
+phi-guard scan ./ --format json
 
 # Output as SARIF (for GitHub Security tab)
 phi-guard scan ./ --format sarif
@@ -116,17 +124,17 @@ PHI Guard uses [Microsoft Presidio](https://github.com/microsoft/presidio) for P
 ┌─────────────────────────────────────────────────┐
 │                   PHI Guard                      │
 ├─────────────────────────────────────────────────┤
-│  CLI (Typer)                                    │
+│  CLI (Typer + Rich)                             │
 │    └── phi-guard scan <path>                    │
 ├─────────────────────────────────────────────────┤
 │  Engine                                          │
 │    └── scan_text() / scan_file() / scan_dir()   │
 ├─────────────────────────────────────────────────┤
-│  Recognizers                                     │
-│    ├── SSN Recognizer (regex, score 0.85)       │
-│    ├── MRN Recognizer (planned)                 │
-│    ├── Phone Recognizer (planned)               │
-│    └── ... 18 HIPAA identifiers                 │
+│  Recognizers (17 PHI types)                      │
+│    ├── SSN, MRN, Phone, Email, Fax              │
+│    ├── VIN, Driver's License, DEA, NPI          │
+│    ├── Medicare/Medicaid, Account, Device       │
+│    └── ZIP Code, URL, IP, Age over 89, Dates    │
 ├─────────────────────────────────────────────────┤
 │  Presidio AnalyzerEngine                         │
 │    ├── RecognizerRegistry                       │
